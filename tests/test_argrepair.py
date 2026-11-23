@@ -267,3 +267,47 @@ class TestSchemaShapes:
         assert "maximum" not in codes
         assert "minimum" in codes
         assert "enum" in codes
+
+
+class TestRigour:
+    """Branches the happy-path tests walked past."""
+
+    def test_an_ast_literal_dict_is_parsed(self):
+        assert parse_args("{'a': 1, 'b': [2]}") == {"a": 1, "b": [2]}
+
+    def test_a_string_that_is_not_a_number_is_returned_unchanged(self):
+        assert coerce("abc", "integer") == "abc"
+        assert coerce("1.5x", "number") == "1.5x"
+
+    def test_the_declared_type_of_each_shape(self):
+        assert coerce({"a": 1}, "object") == {"a": 1}
+        for value, expected in (
+            ({}, "object"),
+            ([], "array"),
+            ((), "array"),
+            (None, "null"),
+        ):
+            problems = check({"field": value}, {"field": {"type": "string"}})
+            assert problems[0].message.endswith(expected)
+
+    def test_a_number_and_a_boolean_are_told_apart(self):
+        assert check({"n": 1.5}, {"n": {"type": "number"}}) == []
+        assert check({"n": True}, {"n": {"type": "boolean"}}) == []
+        assert check({"n": True}, {"n": {"type": "integer"}})[0].message.endswith("boolean")
+
+    def test_arguments_that_are_not_an_object_are_rejected(self):
+        with pytest.raises(ValueError, match="not readable"):
+            parse_args("just some words")
+
+    def test_a_python_tuple_is_reached_through_literal_eval(self):
+        assert parse_args("{'a': (1, 2)}") == {"a": (1, 2)}
+
+    def test_an_unknown_object_reports_its_type(self):
+        problems = check({"field": object()}, {"field": {"type": "string"}})
+        assert problems[0].message.endswith("object")
+
+    def test_parse_and_check_without_a_schema(self):
+        arguments, problems, message = parse_and_check("{'a': 1}")
+        assert arguments == {"a": 1}
+        assert problems == []
+        assert message == ""
