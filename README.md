@@ -1,39 +1,23 @@
-# argrepair
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sandeshbagmare/argrepair/main/assets/banner.svg" width="100%" alt="argrepair: turn a bad tool call into a message the model can act on">
+</p>
 
-Turn a bad tool call into one sentence the model can act on, instead of an exception that
-ends the run.
+<p align="center">
+  <a href="https://pypi.org/project/argrepair/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/argrepair.svg"></a>
+  <a href="https://pypi.org/project/argrepair/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/argrepair.svg"></a>
+  <a href="https://pypi.org/project/argrepair/"><img alt="Downloads" src="https://img.shields.io/pypi/dm/argrepair.svg"></a>
+  <a href="https://github.com/sandeshbagmare/argrepair/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/sandeshbagmare/argrepair/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/sandeshbagmare/argrepair/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/pypi/l/argrepair.svg"></a>
+  <a href="https://sandeshbagmare.github.io/argrepair/"><img alt="docs" src="https://img.shields.io/badge/docs-online-2ea44f.svg"></a>
+  <a href="https://pypi.org/project/argrepair/"><img alt="zero dependencies" src="https://img.shields.io/badge/dependencies-0-2ea44f.svg"></a>
+</p>
 
-[![PyPI](https://img.shields.io/pypi/v/argrepair.svg)](https://pypi.org/project/argrepair/)
-[![Python](https://img.shields.io/pypi/pyversions/argrepair.svg)](https://pypi.org/project/argrepair/)
-[![tests](https://github.com/sandeshbagmare/argrepair/actions/workflows/ci.yml/badge.svg)](https://github.com/sandeshbagmare/argrepair/actions/workflows/ci.yml)
-[![license](https://img.shields.io/pypi/l/argrepair.svg)](https://github.com/sandeshbagmare/argrepair/blob/main/LICENSE)
+<h3 align="center">turn a bad tool call into a message the model can act on</h3>
+<p align="center"><em>Standard library only. No runtime dependencies. Python 3.9+.</em></p>
 
-```python
->>> from argrepair import parse_and_check
->>> schema = {"path": {"type": "string", "required": True}, "bytes": {"type": "integer"}}
->>> args, problems, message = parse_and_check("{'path': 'a.txt', 'bytes': '42'}", schema, tool="read_file")
->>> args
-{'path': 'a.txt', 'bytes': 42}
->>> problems
-[]
-```
-
-And when the call really is wrong:
-
-```python
->>> _, problems, message = parse_and_check('{"bytes": "many"}', schema, tool="read_file")
->>> print(message)
-The arguments for `read_file` were rejected:
-- 'path' is required
-- 'bytes' must be integer, not string
-Send the call again with corrected arguments.
-```
-
-Models produce almost-JSON constantly: single quotes, `True`/`None`, a trailing comma, a
-`//` comment, a fenced code block, a JSON string where an integer belongs. A tool runtime
-that raises on the first of those turns a recoverable mistake into a failed run.
-`argrepair` repairs what is unambiguously repairable, coerces what is unambiguous,
-validates against a small schema, and hands back a message designed for the next turn.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sandeshbagmare/argrepair/main/assets/how.svg" width="720" alt="how argrepair fits in">
+</p>
 
 ## Install
 

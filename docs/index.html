@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>argrepair — turn a bad tool call into a message the model can act on</title>
+<meta name="description" content="Turn a bad tool call into a message the model can act on. Standard library only, Python 3.9+.">
+<meta property="og:title" content="argrepair — turn a bad tool call into a message the model can act on">
+<meta property="og:description" content="Turn a bad tool call into a message the model can act on. Standard library only, Python 3.9+.">
+<meta property="og:image" content="https://raw.githubusercontent.com/sandeshbagmare/argrepair/main/assets/banner.svg">
+<meta property="og:type" content="website">
+<link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg: hsl(282 45% 8%);
+    --ink: #e6edf6;
+    --muted: #9fb0c6;
+    --line: hsl(282 35% 26%);
+    --accent: hsl(232 88% 66%);
+    --soft: hsl(232 92% 80%);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.65 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color: var(--soft); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  header {
+    position: sticky; top: 0; z-index: 9; display: flex; gap: 18px; align-items: center;
+    padding: 14px 24px; background: rgba(8, 12, 20, 0.86); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  header .mark { width: 26px; height: 26px; }
+  header strong { font-family: ui-monospace, monospace; letter-spacing: 0.02em; }
+  header nav { margin-left: auto; display: flex; gap: 16px; font-size: 14px; }
+  .hero { max-width: 1180px; margin: 0 auto; padding: 18px 20px 0; }
+  .hero img { width: 100%; border-radius: 14px; box-shadow: 0 18px 50px rgba(0,0,0,0.45); }
+  main { max-width: 900px; margin: 0 auto; padding: 28px 20px 80px; }
+  h1, h2, h3, h4 { line-height: 1.25; }
+  h2 { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--line); }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em;
+    background: rgba(148, 163, 184, 0.15); padding: 1px 5px; border-radius: 5px;
+  }
+  pre.code {
+    position: relative; background: #070b12; border: 1px solid var(--line);
+    border-radius: 12px; padding: 16px; overflow-x: auto;
+  }
+  pre.code code { background: none; padding: 0; font-size: 14px; }
+  pre .lang {
+    position: absolute; top: 8px; right: 12px; font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 15px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  img { max-width: 100%; }
+  blockquote {
+    margin: 18px 0; padding: 4px 16px; border-left: 3px solid var(--accent);
+    color: var(--muted);
+  }
+  footer {
+    border-top: 1px solid var(--line); padding: 26px 20px; color: var(--muted);
+    font-size: 14px; text-align: center;
+  }
+</style>
+</head>
+<body>
+<header>
+  <img class="mark" src="../assets/logo.svg" alt="">
+  <strong>argrepair</strong>
+  <nav>
+    <a href="https://pypi.org/project/argrepair/">PyPI</a>
+    <a href="https://github.com/sandeshbagmare/argrepair">GitHub</a>
+    <a href="https://github.com/sandeshbagmare/argrepair/issues">Issues</a>
+    <a href="https://github.com/sandeshbagmare/argrepair/blob/main/CHANGELOG.md">Changelog</a>
+  </nav>
+</header>
+<div class="hero"><img src="../assets/banner.svg" alt="argrepair"></div>
+<main>
+<p align="center">
+  <img src="../assets/how.svg" width="720" alt="how argrepair fits in">
+</p>
+<h2>Install</h2>
+<pre class="code"><span class="lang">console</span><code>pip install argrepair</code></pre>
+<h2>Use</h2>
+<pre class="code"><span class="lang">python</span><code>from argrepair import parse_args, check, coerce, feedback, parse_and_check
+
+parse_args(&quot;{&#x27;a&#x27;: 1,}&quot;)                       # {&#x27;a&#x27;: 1}
+parse_args(&quot;{\&quot;a\&quot;: True}&quot;)                   # {&#x27;a&#x27;: True}
+parse_args(&#x27;```json\n{&quot;a&quot;: 1}\n```&#x27;)          # {&#x27;a&#x27;: 1}
+
+problems = check({&quot;mode&quot;: &quot;turbo&quot;}, {&quot;mode&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;enum&quot;: [&quot;fast&quot;, &quot;safe&quot;]}})
+print(feedback(problems, tool=&quot;search&quot;))</code></pre>
+<p>The one call a middleware needs:</p>
+<pre class="code"><span class="lang">python</span><code>def run_tool(name, raw_arguments, schema, tool):
+    arguments, problems, message = parse_and_check(raw_arguments, schema, tool=name)
+    if problems:
+        return {&quot;error&quot;: message}        # the model gets another turn
+    return tool(**arguments)</code></pre>
+<h2>Schema</h2>
+<pre class="code"><span class="lang">python</span><code>{
+    &quot;path&quot;:   {&quot;type&quot;: &quot;string&quot;, &quot;required&quot;: True},
+    &quot;bytes&quot;:  {&quot;type&quot;: &quot;integer&quot;, &quot;minimum&quot;: 0},
+    &quot;limit&quot;:  {&quot;type&quot;: &quot;number&quot;, &quot;maximum&quot;: 100},
+    &quot;mode&quot;:   {&quot;type&quot;: &quot;string&quot;, &quot;enum&quot;: [&quot;fast&quot;, &quot;safe&quot;]},
+    &quot;tags&quot;:   {&quot;type&quot;: &quot;array&quot;, &quot;items&quot;: {&quot;type&quot;: &quot;string&quot;}},
+    &quot;dry_run&quot;: {&quot;type&quot;: &quot;boolean&quot;},
+}</code></pre>
+<p><code>type</code> is one of <code>string</code>, <code>integer</code>, <code>number</code>, <code>boolean</code>, <code>object</code>, <code>array</code>, <code>null</code>. A boolean is <strong>not</strong> an integer here, and <code>1.5</code> is not an integer — the two mistakes that turn into silent data loss downstream. Unknown fields are reported as <code>unexpected</code>, so a model that invents <code>colour: "red"</code> is told so instead of the value being dropped.</p>
+<h2>What is repaired, and what is refused</h2>
+<table><thead><tr>
+<th>input</th>
+<th>result</th>
+</tr></thead><tbody>
+<tr><td><code>{'a': 1}</code></td><td>parsed</td></tr>
+<tr><td><code>{"a": True, "b": None}</code></td><td>parsed</td></tr>
+<tr><td><code>{"a": 1,}</code></td><td>parsed</td></tr>
+<tr><td><code>{"a": 1} // note</code></td><td>parsed</td></tr>
+<tr><td><code> </code>`<code>json {…} </code>`<code> </code></td><td>parsed</td></tr>
+<tr><td><code>{"a": 'x'}</code> (single quotes inside JSON quotes)</td><td>refused, so a real <code>'</code> in a value is never mangled</td></tr>
+<tr><td><code>[1, 2]</code></td><td>refused: arguments must be an object</td></tr>
+<tr><td><code>not json at all</code></td><td>a message, not an exception, via <code>parse_and_check</code></td></tr>
+</tbody></table>
+<p>Coercion is deliberately narrow: <code>"42"</code> → <code>42</code>, <code>"1.5"</code> → <code>1.5</code>, <code>"true"/"yes"/"on"/"1"</code> → <code>True</code>, <code>3</code> → <code>"3"</code> for a string field, a lone value → a one-item array. Anything else stays as it was and is reported by <code>check</code>.</p>
+<h2>Limits</h2>
+<ul>
+<li>This is a small schema, not JSON Schema: no <code>oneOf</code>, no <code>pattern</code>, no nested objects.</li>
+</ul>
+<p>  Reach for <code>jsonschema</code> when you need that; this library is about the message.</p>
+<ul>
+<li>Repairs are heuristic. A payload that is genuinely ambiguous is refused rather than</li>
+</ul>
+<p>  guessed at.</p>
+<ul>
+<li>It validates the shape of the arguments, not their meaning — whether the path exists is</li>
+</ul>
+<p>  still the tool's job.</p>
+<h2>Development</h2>
+<pre class="code"><span class="lang">console</span><code>python -m venv .venv
+.venv/bin/pip install -e &quot;.[test]&quot;
+.venv/bin/pytest</code></pre>
+<h2>License</h2>
+<p>MIT.</p>
+</main>
+<footer>
+  argrepair · MIT · standard library only ·
+  <a href="https://github.com/sandeshbagmare/argrepair">source</a> ·
+  <a href="https://pypi.org/project/argrepair/">pip install argrepair</a>
+</footer>
+</body>
+</html>
