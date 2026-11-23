@@ -8,7 +8,7 @@ and given another turn. Doing that without an exception loop is the whole job.
     >>> args = parse_args("{'path': 'a.txt',}")
     >>> args
     {'path': 'a.txt'}
-    >>> schema = {"path": {"type": "string", "required": True}, "bytes": {"type": "integer"}}
+    >>> schema = {"path": {"type": "string"}, "bytes": {"type": "integer", "required": True}}
     >>> problems = check(args, schema)
     >>> problems
     [ArgProblem(field='bytes', code='missing', message="'bytes' is required")]
